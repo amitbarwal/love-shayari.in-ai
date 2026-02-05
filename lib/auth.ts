@@ -1,46 +1,71 @@
-import { AuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
+    adapter: PrismaAdapter(prisma),
+    session: {
+        strategy: "jwt",
+    },
+    pages: {
+        signIn: "/login",
+    },
     providers: [
         CredentialsProvider({
-            name: "Credentials",
+            name: "credentials",
             credentials: {
                 email: { label: "Email", type: "email" },
-                password: { label: "Password", type: "password" }
+                password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) return null
+                if (!credentials?.email || !credentials?.password) {
+                    throw new Error("Invalid credentials");
+                }
 
                 const user = await prisma.user.findUnique({
-                    where: { email: credentials.email }
-                })
+                    where: {
+                        email: credentials.email,
+                    },
+                });
 
-                if (!user) return null
-
-                // TODO: Use bcrypt for password hashing in production
-                if (user.password === credentials.password) {
-                    return { id: user.id, name: user.name, email: user.email, image: user.image }
+                if (!user || !user.password) {
+                    throw new Error("User not found");
                 }
-                return null
-            }
-        })
+
+                const isPasswordCorrect = await bcrypt.compare(
+                    credentials.password,
+                    user.password
+                );
+
+                if (!isPasswordCorrect) {
+                    throw new Error("Invalid password");
+                }
+
+                return {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                };
+            },
+        }),
     ],
-    pages: {
-        signIn: '/auth/signin',
-    },
-    session: {
-        strategy: "jwt"
-    },
     callbacks: {
-        async session({ session, token }) {
-            if (session.user && token.sub) {
-                // @ts-ignore
-                session.user.id = token.sub
+        async jwt({ token, user }) {
+            if (user) {
+                token.role = user.role;
+                token.id = user.id;
             }
-            return session
-        }
+            return token;
+        },
+        async session({ session, token }) {
+            if (session?.user) {
+                session.user.role = token.role;
+                session.user.id = token.id;
+            }
+            return session;
+        },
     },
-    secret: process.env.NEXTAUTH_SECRET || "supersecret"
-}
+};

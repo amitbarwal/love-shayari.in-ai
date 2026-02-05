@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -13,8 +13,10 @@ model User {
   password  String
   name      String?
   image     String?
+  role      String   @default("AUTHOR") // "ADMIN", "AUTHOR", "USER"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  posts     Post[]
 }
 
 model Post {
@@ -33,6 +35,9 @@ model Post {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
   tags       Tag[]
+  
+  authorId   String?
+  author     User?    @relation(fields: [authorId], references: [id])
 }
 
 model Category {
@@ -41,6 +46,8 @@ model Category {
   slug        String   @unique
   description String?
   image       String?
+  seoTitle    String?
+  seoDesc     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   posts       Post[]
@@ -65,4 +72,16 @@ model Page {
   seoDesc     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Settings {
+  id                  String   @id @default("singleton")
+  siteName            String   @default("Love Shayari")
+  siteDescription     String   @default("Best Collection of Quotes and Shayari")
+  siteLogo            String?
+  themeColor          String   @default("#e11d48") // rose-600
+  footerText          String?
+  homeMetaTitle       String?
+  homeMetaDescription String?
+  updatedAt           DateTime @updatedAt
 }
