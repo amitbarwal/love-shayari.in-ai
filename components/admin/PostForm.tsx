@@ -206,20 +206,72 @@ export function PostForm({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Featured Image URL</label>
-                                <div className="relative">
-                                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="url"
-                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition"
-                                        placeholder="https://images.unsplash.com/..."
-                                        value={formData.featuredImage}
-                                        onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                                    />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Featured Image</label>
+                                <div className="space-y-3">
+                                    <div className="relative">
+                                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type="url"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition"
+                                            placeholder="Paste image URL..."
+                                            value={formData.featuredImage}
+                                            onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-[1px] flex-1 bg-gray-100"></div>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">OR</span>
+                                        <div className="h-[1px] flex-1 bg-gray-100"></div>
+                                    </div>
+
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            id="image-upload"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setLoading(true);
+                                                    try {
+                                                        const response = await fetch(
+                                                            `/api/upload?filename=${file.name}`,
+                                                            {
+                                                                method: 'POST',
+                                                                body: file,
+                                                            },
+                                                        );
+                                                        const newBlob = await response.json();
+                                                        setFormData(prev => ({ ...prev, featuredImage: newBlob.url }));
+                                                        setSuccess("Image uploaded successfully!");
+                                                    } catch (err) {
+                                                        setError("Image upload failed");
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <label
+                                            htmlFor="image-upload"
+                                            className="flex items-center justify-center gap-2 w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl border border-rose-200 transition cursor-pointer"
+                                        >
+                                            <ImageIcon className="w-5 h-5" />
+                                            {loading ? "Uploading..." : "Upload from Device"}
+                                        </label>
+                                    </div>
                                 </div>
                                 {formData.featuredImage && (
-                                    <div className="mt-4 aspect-video rounded-xl overflow-hidden border border-rose-100">
+                                    <div className="mt-4 aspect-video rounded-xl overflow-hidden border border-rose-100 shadow-sm relative group">
                                         <img src={formData.featuredImage} alt="Preview" className="w-full h-full object-cover" />
+                                        <button
+                                            onClick={() => setFormData(prev => ({ ...prev, featuredImage: "" }))}
+                                            className="absolute top-2 right-2 p-2 bg-white/90 rounded-lg text-rose-600 opacity-0 group-hover:opacity-100 transition shadow-sm"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 )}
                             </div>

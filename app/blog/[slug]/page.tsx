@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Calendar, Tag, ChevronLeft, Heart, Share2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { ShareButtons } from "@/components/blog/ShareButtons";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
@@ -78,9 +79,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                         </div>
 
                         <div className="ml-auto flex items-center gap-2">
-                            <button className="p-2.5 rounded-xl hover:bg-white transition text-gray-400 hover:text-rose-600 border border-transparent hover:border-rose-100">
-                                <Share2 className="w-4 h-4" />
-                            </button>
+                            <ShareButtons
+                                title={post.title}
+                                url={`https://love-shayari.in/blog/${post.slug}`}
+                            />
                         </div>
                     </div>
                 </header>
